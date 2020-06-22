@@ -37,7 +37,7 @@ jobs:
       run: |
         echo "::set-output name=changelog::$(node ./bin/cli.js)"
 
-  - name: Создание gh release
+    - name: Создание gh release
       uses: gpn-prototypes/vega-actions/generate-gh-release@master
       with:
         changelog: ${{ steps.changelog.outputs.changelog }}
