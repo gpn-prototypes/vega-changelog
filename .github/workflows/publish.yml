@@ -32,11 +32,27 @@ jobs:
         yarn release --no-verify --releaseCommitMessageFormat "chore(package): обновление пакета [skip ci]"
         git push origin master --follow-tags
 
+    - name: Генерация логов
+      id: changelog
+      run: |
+        echo "::set-output name=changelog::$(node ./bin/cli.js)"
 
-    - name: Создание gh release
-      uses: ncipollo/release-action@v1
+  - name: Создание gh release
+      uses: gpn-prototypes/vega-actions/generate-gh-release@master
       with:
+        changelog: ${{ steps.changelog.outputs.changelog }}
         token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Обновление CHANGELOG.md
+      uses: gpn-prototypes/vega-actions/update-changelog@master
+      with:
+        changelog: ${{ steps.changelog.outputs.changelog }}
+
+    - name: Коммит CHANGELOG.md
+      run: |
+        git add CHANGELOG.md
+        git commit -m "chore(changelog): обновление changelog [skip ci]" --no-verify --quiet
+        git push origin master
 
     - name: Публикация на gh registry
       run: |

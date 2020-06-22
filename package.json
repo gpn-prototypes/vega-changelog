@@ -18,6 +18,11 @@
     "type": "git",
     "url": "ssh://git@github.com:gpn-prototypes/vega-changelog.git"
   },
+  "standard-version": {
+    "skip": {
+      "changelog": true
+    }
+  },
   "scripts": {
     "build": "npm run clean && tsc",
     "changelog": "node ./bin/cli.js",
