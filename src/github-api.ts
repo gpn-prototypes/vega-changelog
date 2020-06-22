@@ -1,7 +1,6 @@
 const path = require("path");
 
 import ConfigurationError from "./configuration-error";
-import * as Git from "./git";
 import fetch from "./fetch";
 
 export interface GitHubUserResponse {

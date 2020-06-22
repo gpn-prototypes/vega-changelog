@@ -99,6 +99,8 @@ function fromConfig(rootPath: string): Partial<Configuration> | undefined {
   if (fs.existsSync(configPath)) {
     return require(configPath);
   }
+
+  return undefined;
 }
 
 function fromPackageConfig(rootPath: string): Partial<Configuration> | undefined {
@@ -106,6 +108,8 @@ function fromPackageConfig(rootPath: string): Partial<Configuration> | undefined
   if (fs.existsSync(pkgPath)) {
     return JSON.parse(fs.readFileSync(pkgPath)).changelog;
   }
+
+  return undefined;
 }
 
 function findRepo(rootPath: string): string | undefined {
@@ -138,4 +142,5 @@ export function findRepoFromPkg(pkg: any): string | undefined {
   if (info && info.type === "github") {
     return `${info.user}/${info.project}`;
   }
+  return undefined;
 }
