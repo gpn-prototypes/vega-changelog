@@ -35,7 +35,7 @@ jobs:
     - name: Генерация логов
       id: changelog
       run: |
-        echo "::set-output name=changelog::$(node -e 'JSON.stringify("$(node ./bin/cli.js)")')"
+        node generate-logs.js
       env:
         GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
 
