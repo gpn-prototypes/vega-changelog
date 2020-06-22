@@ -23,17 +23,25 @@
       "changelog": true
     }
   },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-customizable"
+    },
+    "cz-customizable": {
+      "config": "./node_modules/@gpn-prototypes/frontend-configs/git/commitizen.js"
+    }
+  },
   "scripts": {
     "build": "rm -rf lib && tsc",
     "changelog": "node ./bin/cli.js",
-    "fix": "npm run lint --fix",
-    "lint": "eslint src --ext ts --format stylish",
     "release": "standard-version",
     "prepublish": "npm run build",
-    "prettier": "prettier --write 'src/**/*.ts'",
-    "test": "jest",
-    "test-ci": "npm run build && jest",
-    "watch": "npm run build --watch"
+    "prettier": "prettier --write ./**/*.{ts,tsx,css,js,jsx}",
+    "lint:ts": "eslint --ext=.ts,.tsx .",
+    "lint:ts:fix": "eslint --ext=.ts,.tsx . --fix",
+    "lint:md": "remark . -o",
+    "lint": "yarn run lint:ts && yarn run lint:css && yarn run lint:md",
+    "lint:fix": "yarn run lint:ts:fix && yarn run lint:md"
   },
   "dependencies": {
     "chalk": "^2.4.1",
@@ -53,7 +61,6 @@
     "@testing-library/jest-dom": "^5.5.0",
     "fs-extra": "^8.1.0",
     "jest": "^25.5.4",
-    "prettier": "1.19.1",
     "ts-jest": "^25.5.1",
     "lint-staged": "^10.2.11",
     "husky": "^4.2.5",
