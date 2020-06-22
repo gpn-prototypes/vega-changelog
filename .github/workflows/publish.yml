@@ -36,6 +36,8 @@ jobs:
       id: changelog
       run: |
         echo "::set-output name=changelog::$(node ./bin/cli.js)"
+      env:
+        GITHUB_AUTH: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Создание gh release
       uses: gpn-prototypes/vega-actions/generate-gh-release@master
