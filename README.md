@@ -1,25 +1,23 @@
-lerna-changelog
+vega-changelog
 ==============================================================================
 
-[![Latest NPM release][npm-badge]][npm-badge-url]
+![node](https://img.shields.io/badge/node-%3E%3D%2012.16.2-brightgreen.svg)
+![yarn](https://img.shields.io/badge/yarn-%3E%3D%201.22.4-blue.svg)
 
-[npm-badge]: https://img.shields.io/npm/v/@hitmanet-808/lerna-changelog.svg
-[npm-badge-url]: https://www.npmjs.com/package/@hitmanet808/lerna-changelog
-
-PR-based генератор чейнджлогов для проектов с lerna
+PR-based генератор чейнджлогов для проектов
 
 
 Установка
 ------------------------------------------------------------------------------
 
 ```bash
-yarn add @hitmanet808/lerna-changelog --dev
+yarn add @gpn-prototypes/vega-changelog --dev
 ```
 Usage
 ------------------------------------------------------------------------------
 
 ```bash
-$ lerna-changelog
+$ vega-changelog
 ```
 
 Для работы в окружение необходим ```GITHUB_AUTH``` токен с разрешениями на ```repo```.

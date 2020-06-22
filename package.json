@@ -1,32 +1,35 @@
 {
-  "name": "@hitmanet808/lerna-changelog",
+  "name": "@gpn-prototypes/vega-changelog",
   "version": "3.0.1",
-  "description": "Generate a changelog for a lerna monorepo",
   "keywords": [
     "changelog",
     "lerna"
   ],
+  "author": "gpn-prototypes",
   "license": "MIT",
-  "author": "Bo Borgerson <gigabo@gmail.com>",
   "main": "index.js",
   "bin": {
-    "lerna-changelog": "./bin/cli.js"
+    "changelog": "./bin/cli.js"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hitmanet/lerna-changelog.git"
+    "url": "ssh://git@github.com:gpn-prototypes/vega-changelog.git"
   },
   "scripts": {
     "build": "npm run clean && tsc",
     "changelog": "node ./bin/cli.js",
     "clean": "rimraf lib",
-    "fix": "npm run lint -- --fix",
+    "fix": "npm run lint --fix",
     "lint": "eslint src --ext ts --format stylish",
+    "release": "standard-version",
     "prepublish": "npm run build",
     "prettier": "prettier --write 'src/**/*.ts'",
     "test": "jest",
     "test-ci": "npm run build && jest",
-    "watch": "npm run build -- --watch"
+    "watch": "npm run build --watch"
   },
   "dependencies": {
     "chalk": "^2.4.1",
@@ -34,7 +37,6 @@
     "execa": "^1.0.0",
     "hosted-git-info": "^3.0.4",
     "make-fetch-happen": "^7.1.1",
-    "p-map": "^3.0.0",
     "progress": "^2.0.0",
     "yargs": "^13.0.0"
   },
@@ -43,6 +45,7 @@
     "@types/node": "^13.13.4",
     "@typescript-eslint/eslint-plugin": "^2.34.0",
     "@typescript-eslint/parser": "^2.34.0",
+    "standard-version": "^8.0.0",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.3",

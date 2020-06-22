@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    branches: ['master']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+    - name: Checkout branch
+      uses: actions/checkout@v2
+      with:
+        token: ${{ secrets.ADMIN_TOKEN }}
+    - name: Настройка git
+      run: |
+        git config --local user.name "GitHub Workflow"
+        git config --local user.email "workflow@github.com"
+    - name: Скачивание всей git-истории (чтобы работал from-git)
+      run: git fetch --prune --unshallow
+
+    - name: Использование Node.js 12
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12
+        registry-url: 'https://npm.pkg.github.com'
+
+    - name: Поднятие версии пакета
+      run: |
+        yarn --frozen-lockfile
+        yarn release --no-verify --releaseCommitMessageFormat "chore(package): обновление пакета [skip ci]"
+        git push origin master --follow-tags
+
+
+    - name: Создание gh release
+      uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Публикация на gh registry
+      run: |
+        yarn policies set-version 1.22.4
+        npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
