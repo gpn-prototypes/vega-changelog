@@ -1,62 +1,54 @@
-/* tslint:disable:no-console */
+/* eslint-disable no-console */
 
-import chalk from "chalk";
+import { highlight } from 'cli-highlight';
 
-import { highlight } from "cli-highlight";
+import Changelog from './changelog';
+import { load as loadConfig } from './configuration';
+import ConfigurationError from './configuration-error';
 
-import Changelog from "./changelog";
-import { load as loadConfig } from "./configuration";
-import ConfigurationError from "./configuration-error";
+const chalk = require('chalk');
+const yargs = require('yargs');
 
-export async function run() {
-  const yargs = require("yargs");
-
+export async function run(): Promise<void> {
   const argv = yargs
-    .usage("lerna-changelog [options]")
+    .usage('lerna-changelog [options]')
     .options({
       from: {
-        type: "string",
-        desc: "A git tag or commit hash that determines the lower bound of the range of commits",
-        defaultDescription: "latest tagged commit",
+        type: 'string',
+        desc: 'A git tag or commit hash that determines the lower bound of the range of commits',
+        defaultDescription: 'latest tagged commit',
       },
       to: {
-        type: "string",
-        desc: "A git tag or commit hash that determines the upper bound of the range of commits",
+        type: 'string',
+        desc: 'A git tag or commit hash that determines the upper bound of the range of commits',
       },
     })
     .example(
-      "lerna-changelog",
-      'create a changelog for the changes after the latest available tag, under "Unreleased" section'
+      'lerna-changelog',
+      'create a changelog for the changes after the latest available tag, under "Unreleased" section',
     )
     .example(
-      "lerna-changelog --from=0.1.0 --to=0.3.0",
-      "create a changelog for the changes in all tags within the given range"
+      'lerna-changelog --from=0.1.0 --to=0.3.0',
+      'create a changelog for the changes in all tags within the given range',
     )
-    .epilog("For more information, see https://github.com/lerna/lerna-changelog")
+    .epilog('For more information, see https://github.com/lerna/lerna-changelog')
     .wrap(Math.min(100, yargs.terminalWidth()))
     .parse();
 
-  let options = {
-    tagFrom: argv["from"],
-    tagTo: argv["to"],
+  const options = {
+    tagFrom: argv.from,
+    tagTo: argv.to,
   };
 
   try {
-    let config = loadConfig({
-      nextVersionFromMetadata: argv["next-version-from-metadata"],
-    });
+    const config = loadConfig();
+    const result = await new Changelog(config).createMarkdown(options);
 
-    if (argv["next-version"]) {
-      config.nextVersion = argv["next-version"];
-    }
-
-    let result = await new Changelog(config).createMarkdown(options);
-
-    let highlighted = highlight(result, {
-      language: "Markdown",
+    const highlighted = highlight(result, {
+      language: 'Markdown',
       theme: {
         section: chalk.bold,
-        string: chalk.hex("#0366d6"),
+        string: chalk.hex('#0366d6'),
         link: chalk.dim,
       },
     });

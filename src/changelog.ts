@@ -1,88 +1,105 @@
-import { Configuration } from "./configuration";
-import { Issue, Release } from "./interfaces";
-import * as Git from "./git";
-import GithubAPI from "./github-api";
-import MarkdownRenderer from "./markdown-renderer";
+import { Configuration } from './configuration';
+import { Git } from './git';
+import GithubAPI from './github-api';
+import { GithubPullRequest, Issue } from './interfaces';
+import MarkdownRenderer from './markdown-renderer';
+import { Release } from './release';
 
 interface Options {
   tagFrom?: string;
   tagTo?: string;
 }
 
+function onlyUnique(value: string, index: number, self: string[]): boolean {
+  return self.indexOf(value) === index;
+}
+
 export default class Changelog {
   private readonly config: Configuration;
+
   private github: GithubAPI;
+
   private renderer: MarkdownRenderer;
+
+  private git: Git;
 
   constructor(config: Configuration) {
     this.config = config;
     this.github = new GithubAPI(this.config);
     this.renderer = new MarkdownRenderer({
-      categories: Object.keys(this.config.labels).map(key => this.config.labels[key]),
-      baseIssueUrl: this.github.getBaseIssueUrl(this.config.repo),
-      unreleasedName: this.config.nextVersion || "Unreleased",
+      baseIssueUrl: GithubAPI.getBaseIssueUrl(this.config.repo),
       repo: this.config.repo,
     });
+    this.git = new Git(this.config.mainPackage);
   }
 
-  private async getFrom(options: Options): Promise<string> {
+  private getFrom(options: Options): string {
     if (options.tagFrom) {
-      return await Git.getDateByTag(options.tagFrom);
+      return Git.getDateByTag(options.tagFrom);
     }
 
-    if (this.config.mainPackage) {
-      return await Git.previousTagDate(this.config.mainPackage);
-    }
-
-    return await Git.previousTagDate();
+    return this.git.getPreviousMainPackageTagDate();
   }
 
-  public async createMarkdown(options: Options = {}) {
-    const from = await this.getFrom(options);
+  public async createMarkdown(options: Options = {}): Promise<string> {
+    const { changelog } = this.config;
+    const from = this.getFrom(options);
 
-    const to = await Git.getDateByTag(options.tagTo || "HEAD");
+    const to = Git.getDateByTag(options.tagTo ?? 'HEAD');
 
-    const release = await this.getRelease(from, to);
+    const release = new Release();
+    release.setTag(options.tagTo ?? this.git.getLastMainPackageTag());
+    if (changelog?.includes(release.getTag())) {
+      return '';
+    }
+    release.setReleaseDate(to.split(' ')[0]);
+    const issues = await this.github.getPullRequests(this.config.repo, from, to);
 
-    if (options.tagTo) {
-      release.tag = options.tagTo;
+    const preparedIssues = this.prepareGithubIssues(issues);
+
+    if (this.config.mode === 'monorepo') {
+      release.setIssues(
+        preparedIssues.filter((issue: Issue) => issue.packages && issue.packages.length > 0),
+      );
+    } else {
+      release.setIssues(preparedIssues);
     }
 
     return this.renderer.renderMarkdown(release);
   }
 
-  private async getIssuesInfo(from: string, to: string): Promise<Issue[]> {
-    const isMonorepo = this.config.mode === "monorepo";
-    const issues = await this.github.getPullRequests(this.config.repo, from, to);
-    const issuesByCategories = issues.map((issue: any) => {
-      const packages = issue.files.map((file: string) => this.packageFromPath(file));
+  private prepareGithubIssues(issues: GithubPullRequest[]): Issue[] {
+    const isMonorepo = this.config.mode === 'monorepo';
+    const issuesByCategories = issues.map((issue: Issue) => {
+      const pr = { ...issue };
+      const packages = pr.files.map((file: string) => this.packageFromPath(file));
       if (isMonorepo) {
-        issue.packages = packages
+        pr.packages = packages
           .filter(onlyUnique)
           .filter((p: string) => p.length > 0 && !this.config.ignorePaths.includes(p));
       }
-      return { title: issue.title, packages: issue.packages, username: issue.username, number: issue.number };
+      return {
+        title: pr.title,
+        packages: pr.packages,
+        username: pr.username,
+        number: pr.number,
+        files: pr.files,
+      };
     });
 
-    if (this.config.mode === "monorepo") {
-      return issuesByCategories.filter((issue: Issue) => issue.packages && issue.packages.length > 0);
+    if (this.config.mode === 'monorepo') {
+      return issuesByCategories.filter(
+        (issue: Issue) => issue.packages && issue.packages.length > 0,
+      );
     }
 
     return issuesByCategories;
   }
 
-  private async getRelease(from: string, to: string): Promise<Release> {
-    const issues = await this.getIssuesInfo(from, to);
-
-    const releaseTag = Git.lastTag(this.config.mainPackage);
-
-    return { issues, tag: releaseTag, releaseDate: to.split(" ")[0] };
-  }
-
   private packageFromPath(path: string): string {
-    const parts = path.split("/");
-    if (parts[0] !== "packages" || parts.length < 3) {
-      return "";
+    const parts = path.split('/');
+    if (parts[0] !== 'packages' || parts.length < 3) {
+      return '';
     }
 
     if (parts.length >= 4 && this.config.ignorePaths.includes(parts[1])) {
@@ -91,8 +108,4 @@ export default class Changelog {
 
     return parts[1];
   }
-}
-
-function onlyUnique(value: any, index: number, self: any[]): boolean {
-  return self.indexOf(value) === index;
 }

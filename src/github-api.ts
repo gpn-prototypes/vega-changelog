@@ -1,104 +1,83 @@
-const path = require("path");
+import * as path from 'path';
 
-import ConfigurationError from "./configuration-error";
-import fetch from "./fetch";
-
-export interface GitHubUserResponse {
-  login: string;
-  name: string;
-  html_url: string;
-}
-export interface GitHubIssueResponse {
-  number: number;
-  title: string;
-  files: { name: string }[];
-  sha: string;
-  pull_request?: {
-    html_url: string;
-  };
-  labels: Array<{
-    name: string;
-  }>;
-  user: {
-    login: string;
-    html_url: string;
-  };
-}
-
-export interface Options {
-  repo: string;
-  rootPath: string;
-  cacheDir?: string;
-}
-
-interface GithubPullRequest {
-  commits: GitHubIssueResponse[];
-  number: string;
-  files: string[];
-  user: { login: string };
-  username: string;
-}
+import ConfigurationError from './configuration-error';
+import { Fetcher } from './fetch';
+import { GitHubIssueResponse, GithubPullRequest, GitHubUserResponse, Options } from './interfaces';
 
 export default class GithubAPI {
   private cacheDir: string | undefined;
+
   private auth: string;
 
+  private fetcher: Fetcher;
+
   constructor(config: Options) {
-    this.cacheDir = config.cacheDir && path.join(config.rootPath, config.cacheDir, "github");
-    this.auth = this.getAuthToken();
+    this.cacheDir = config.cacheDir && path.join(config.rootPath, config.cacheDir, 'github');
+    this.auth = GithubAPI.getAuthToken();
     if (!this.auth) {
-      throw new ConfigurationError("Must provide GITHUB_AUTH");
+      throw new ConfigurationError('Must provide GITHUB_AUTH');
     }
+    this.fetcher = new Fetcher(this.auth, this.cacheDir);
   }
 
-  public getBaseIssueUrl(repo: string): string {
+  public static getBaseIssueUrl(repo: string): string {
     return `https://github.com/${repo}/issues/`;
   }
 
   public async getIssueData(repo: string, issue: string): Promise<GitHubIssueResponse> {
-    return this._fetch(`https://api.github.com/repos/${repo}/issues/${issue}`);
+    return this.fetcher.doRequest<GitHubIssueResponse>(
+      `https://api.github.com/repos/${repo}/issues/${issue}`,
+    );
   }
 
   public async getUserData(login: string): Promise<GitHubUserResponse> {
-    return this._fetch(`https://api.github.com/users/${login}`);
+    return this.fetcher.doRequest<GitHubUserResponse>(`https://api.github.com/users/${login}`);
   }
 
-  public async getPullRequests(repo: string, fromDate: string, toDate: string) {
-    const fromDateParts = fromDate.split(" ");
-    const toDateParts = toDate.split(" ");
+  private async getMergedIssues(
+    repo: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<{ items: GithubPullRequest[] }> {
+    return this.fetcher.doRequest<{ items: GithubPullRequest[] }>(
+      `https://api.github.com/search/issues?q=repo:${repo}+is:pr+is:merged+merged:${fromDate}..${toDate}`,
+    );
+  }
+
+  private async getPullRequestFiles(
+    repo: string,
+    prNumber: string,
+  ): Promise<{ filename: string }[]> {
+    return this.fetcher.doRequest<{ filename: string }[]>(
+      `https://api.github.com/repos/${repo}/pulls/${prNumber}/files`,
+    );
+  }
+
+  public async getPullRequests(
+    repo: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<GithubPullRequest[]> {
+    const fromDateParts = fromDate.split(' ');
+    const toDateParts = toDate.split(' ');
     const fromDateString = `${fromDateParts[0]}T${fromDateParts[1]}Z`;
     const toDateString = `${toDateParts[0]}T${toDateParts[1]}Z`;
-    const { items } = await this._fetch(
-      `https://api.github.com/search/issues?q=repo:${repo}+is:pr+is:merged+merged:${fromDateString}..${toDateString}`
-    );
+    const { items } = await this.getMergedIssues(repo, fromDateString, toDateString);
 
-    const pullRequests = await Promise.all(
+    const pullRequests: GithubPullRequest[] = await Promise.all(
       items.map(async (item: GithubPullRequest) => {
-        const files = await this._fetch(`https://api.github.com/repos/${repo}/pulls/${item.number}/files`);
-        item.username = item.user.login;
-        item.files = files.map((file: { filename: string }) => file.filename);
-        return item;
-      })
+        const pr = { ...item };
+        const files = await this.getPullRequestFiles(repo, pr.number);
+        pr.username = item.user.login;
+        pr.files = files.map((file: { filename: string }) => file.filename);
+        return pr;
+      }),
     );
 
     return pullRequests;
   }
 
-  private async _fetch(url: string): Promise<any> {
-    const res = await fetch(url, {
-      cacheManager: this.cacheDir,
-      headers: {
-        Authorization: `token ${this.auth}`,
-      },
-    });
-    const parsedResponse = await res.json();
-    if (res.ok) {
-      return parsedResponse;
-    }
-    throw new ConfigurationError(`Fetch error: ${res.statusText}.\n${JSON.stringify(parsedResponse)}`);
-  }
-
-  private getAuthToken(): string {
-    return process.env.GITHUB_AUTH || "";
+  private static getAuthToken(): string {
+    return process.env.GITHUB_AUTH || '';
   }
 }

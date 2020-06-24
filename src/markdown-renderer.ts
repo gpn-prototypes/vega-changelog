@@ -1,9 +1,8 @@
-import { Release, Issue } from "./interfaces";
+import { Issue } from './interfaces';
+import { Release } from './release';
 
 interface Options {
-  categories: string[];
   baseIssueUrl: string;
-  unreleasedName: string;
   repo: string;
 }
 
@@ -19,17 +18,19 @@ export default class MarkdownRenderer {
   }
 
   private renderRelease(release: Release): string {
-    return `## ${release.tag} (${release.releaseDate})\n\n${this.renderIssues(release.issues)}`;
+    return `## ${release.getTag()} (${release.getReleaseDate()})\n\n${this.renderIssues(
+      release.getIssues(),
+    )}`;
   }
 
-  private renderIssues(issues: Issue[]) {
+  private renderIssues(issues: Issue[]): string {
     return issues
       .map((issue: Issue) => {
         const packages = issue.packages
-          ? `  * Измененные пакеты: ${issue.packages.map(pkg => `\`${pkg}\``).join(", ")}\n`
-          : "";
+          ? `  * Измененные пакеты: ${issue.packages.map((pkg) => `\`${pkg}\``).join(', ')}\n`
+          : '';
         return `* ${issue.title} [#${issue.number}](https://github.com/${this.options.repo}/pull/${issue.number})\n${packages}   * Автор PR: [@${issue.username}](https://github.com/${issue.username})`;
       })
-      .join("\n\n");
+      .join('\n\n');
   }
 }
