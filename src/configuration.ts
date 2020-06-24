@@ -26,7 +26,7 @@ function fromConfig(rootPath: string): Partial<Configuration> | undefined {
 export function getChangeLogFile(rootPath: string): string {
   const logPath = path.join(rootPath, 'CHANGELOG.md');
   if (fs.existsSync(logPath)) {
-    return require(logPath);
+    return fs.readFileSync(logPath);
   }
 
   const changelogFile = fs.writeFileSync('CHANGELOG.md', defaultChangelog, {
@@ -58,7 +58,7 @@ export function load(): Configuration {
   const rootPath = execa.sync('git', ['rev-parse', '--show-toplevel'], { cwd }).stdout;
 
   const config = fromPath(rootPath);
-  config.changelog = getChangeLogFile(rootPath);
+  config.changelog = getChangeLogFile(rootPath).toString();
 
   return config;
 }

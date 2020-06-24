@@ -1,4 +1,4 @@
 module.exports = {
-  mode: "repo",
-  repo: "gpn-prototypes/vega-changelog",
+  mode: 'repo',
+  repo: 'gpn-prototypes/vega-changelog',
 };
