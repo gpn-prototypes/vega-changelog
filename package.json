@@ -32,7 +32,7 @@
     }
   },
   "scripts": {
-    "build": "rm -rf lib && tsc",
+    "build": "node build.js",
     "changelog": "node ./bin/cli.js",
     "release": "standard-version",
     "prepublish": "npm run build",
