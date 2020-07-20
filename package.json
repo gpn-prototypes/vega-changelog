@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@actions/core": "^1.2.4",
-    "@gpn-prototypes/frontend-configs": "^0.1.1",
+    "@gpn-prototypes/frontend-configs": "^1.0.0",
     "@testing-library/jest-dom": "^5.5.0",
     "@types/hosted-git-info": "^3.0.0",
     "@types/jest": "^25.2.2",
